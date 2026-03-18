@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TruthLens - API de análisis de credibilidad de noticias
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+  Api:
+    Cors:
+      AllowMethods: "'POST,OPTIONS'"
+      AllowHeaders: "'Content-Type'"
+      AllowOrigin: "'*'"
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+
+Resources:
+
+  # ── API Gateway ────────────────────────────────────────────
+  TruthLensApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub truthlens-api-${Stage}
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'POST,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+
+  # ── Lambda: analyze ────────────────────────────────────────
+  AnalyzeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub truthlens-analyze-${Stage}
+      CodeUri: backend/functions/analyze/
+      Handler: handler.lambda_handler
+      Description: Recibe texto o URL y devuelve score de credibilidad
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        AnalyzePost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TruthLensApi
+            Path: /analyze
+            Method: POST
+
+Outputs:
+  ApiUrl:
+    Description: URL base del API
+    Value: !Sub "https://${TruthLensApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+    Export:
+      Name: !Sub truthlens-api-url-${Stage}
+
+  AnalyzeFunctionArn:
+    Description: ARN de la función analyze
+    Value: !GetAtt AnalyzeFunction.Arn

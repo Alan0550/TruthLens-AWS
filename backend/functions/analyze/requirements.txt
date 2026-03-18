@@ -1,0 +1,5 @@
+# Dependencias actuales: ninguna (solo stdlib de Python)
+# Se agregarán conforme se integren servicios AWS:
+# boto3        → Comprehend, Rekognition, Bedrock, DynamoDB
+# beautifulsoup4 → scraping de URLs
+# requests       → HTTP requests desde el scraper
